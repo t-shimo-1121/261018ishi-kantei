@@ -33,18 +33,11 @@ img{max-width:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;font-weight:500;padding-inline:16px;padding-block:18px 56px}
 .wrap{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
 h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance}
-header h1{font-size:28px;line-height:1.25;color:var(--accent-deep)}
+header h1{word-break:keep-all;font-size:28px;line-height:1.25;color:var(--accent-deep)}
 header p{margin:6px 0 0;color:var(--muted);font-size:15px}
 button{font-family:var(--body)}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 
-/* 場所チップ */
-.place{display:flex;flex-direction:column;gap:8px}
-.place .cap{font-weight:900;font-size:15px}
-.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chip{min-height:48px;border:3px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
-.chip.wide{grid-column:1/-1}
-.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
 
 .shoot{display:flex;flex-direction:column;gap:10px}
 .btn-shoot{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:80px;border:none;border-radius:20px;
@@ -53,6 +46,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .btn-shoot:disabled{opacity:.6}
 .btn-shoot svg{width:34px;height:34px}
 .link-btn{background:none;border:none;color:var(--accent-deep);font-weight:700;font-size:15px;text-decoration:underline;cursor:pointer;padding:4px;align-self:center}
+.to-shiori{align-self:flex-start;color:var(--accent-deep);font-weight:700;font-size:15px;text-decoration:none}
 .tip{font-size:14px;color:var(--muted);margin:0}
 .btn{border:3px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:16px;border-radius:14px;padding:10px 14px;min-height:48px;cursor:pointer}
 .note{background:var(--paper);border:3px dashed var(--line);border-radius:16px;padding:14px;font-size:15px}
@@ -136,21 +130,12 @@ dd{margin:2px 0 0;font-size:16px}
 </head>
 <body>
 <div class="wrap">
+  <a class="to-shiori" id="toShiori" href="#" hidden>← しおりにもどる</a>
   <header>
-    <h1>まちなか・川原のいし鑑定所</h1>
-    <p>川原・海・山道から糸魚川まで。ひろった石をとると、AIがなんの石か、どれくらいレアかを鑑定するよ。図鑑のシルエットを全部うめよう！</p>
+    <h1>まちなか・<wbr>川原の<wbr>いし鑑定所</h1>
+    <p>ひろった石をとると、AIがなんの石か、どれくらいレアかを鑑定するよ。図鑑のシルエットを全部うめよう！</p>
   </header>
 
-  <section class="place" aria-labelledby="placeCap">
-    <span class="cap" id="placeCap">ひろった場所</span>
-    <div class="chips" id="chips">
-      <button class="chip" type="button" data-p="川原・水辺" aria-pressed="true">川原・水辺</button>
-      <button class="chip" type="button" data-p="公園・道端" aria-pressed="false">公園・道端</button>
-      <button class="chip" type="button" data-p="山・がけ" aria-pressed="false">山・がけ</button>
-      <button class="chip" type="button" data-p="海辺" aria-pressed="false">海辺</button>
-      <button class="chip wide" type="button" data-p="糸魚川の海岸（ヒスイ海岸など）" aria-pressed="false">糸魚川の海岸</button>
-    </div>
-  </section>
 
   <section class="shoot">
     <input id="photoCam" type="file" accept="image/*" capture="environment" hidden>
@@ -235,24 +220,25 @@ const SLOTS=CATALOG.filter(c=>c.slot);
 
 const STONE_TABLE=[5,4,3,2,1].map(r=>`★${r}: `+CATALOG.filter(c=>c.rarity===r).map(c=>`${c.name}(id:${c.id})`).join(" / ")).join("\n");
 
-function buildPrompt(place){return `あなたは、子どもが川原・公園・道端・山道・海岸（糸魚川のヒスイ海岸もふくむ）でひろった石を鑑定する、子ども向けの石の先生です。
+function buildPrompt(){
+  return `あなたは、子どもが川原・公園・道端・山道・海岸でひろった石を鑑定する、子ども向けの石の先生です。
 小学4年生が自分で読むので、やさしい日本語で書き、むずかしい漢字はひらがなにしてください。
 
-写真は子どもがひろった石です。ひろった場所：「${place}」。場所もヒントにしてください。
-何の石か予想し、下のリストから一番近いものを id でえらんでください。
+写真は子どもがひろった石です。何の石か予想し、下のリストから一番近いものを id でえらんでください。
 ${STONE_TABLE}
 
 ルール:
 - リストのどれかにあてはまるなら、その id を入れる。どれにもあてはまらないときだけ id を "other" にし、name と rarity(1〜5) を自分で決める。
 - ★5（ヒスイ・水晶・化石・黒曜石）は、写真でかなりはっきり特ちょうが見えるときだけにする。迷うときは近い★3〜4の石にして、confidence を「ひくい」にし、nextCheck で確かめる方法を書く。
-- ヒスイは特にきびしく判定する。ヒスイが見つかるのはほぼ糸魚川・朝日町などの海岸や川だけ。それ以外の場所や、白っぽくて決め手がないときはキツネ石・石英などにする。
+- ヒスイ（翡翠輝石岩）は極めて珍しいため、結晶のきらめきや特有の質感・角ばり方が明確に確認できる場合をのぞき、白〜うす緑の石はキツネ石（曹長岩・ロディン岩）や石英、チャートなどを優先して検討する。
 - 本格的な岩石・鉱物の名前で答え、見分けポイント（重さ・すけ方・つぶ・光り方・割れ口など）を書く。
 - コンクリート・アスファルト・レンガなど人工物も、ちゃんと鑑定して楽しいまめちしきをつける。
 - 写真に石がうつっていない、ぼやけて分からないときは isStone を false にし、retryTip にとり直しのコツを書く。
 - がっかりさせず、どの石にもワクワクする「まめちしき」と、自分で見分けられる「見分けポイント」をつける。
 
 次の形のJSONだけで答えてください:
-{"isStone":true,"id":"リストのidか other","name":"石の名前","reading":"よみがな","rarity":1から5の整数,"confidence":"たかい|ふつう|ひくい","why":"見分けポイント（1〜2文）","trivia":"まめちしき（1〜2文）","nextCheck":"もっと確かめる方法（1文）","lookalike":"にている石の名前","retryTip":"isStoneがfalseのときだけ"}`;}
+{"isStone":true,"id":"リストのidか other","name":"石の名前","reading":"よみがな","rarity":1から5の整数,"confidence":"たかい|ふつう|ひくい","why":"見分けポイント（1〜2文）","trivia":"まめちしき（1〜2文）","nextCheck":"もっと確かめる方法（1文）","lookalike":"にている石の名前","retryTip":"isStoneがfalseのときだけ"}`;
+}
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -260,12 +246,12 @@ const fmtDate=t=>{const d=new Date(t);return `${d.getFullYear()}/${d.getMonth()+
 let busy=false,ctl=null;
 
 /* ---------- 保存（この端末だけ） ---------- */
-const KEY="machi-ishi-zukan-v1", PLACE_KEY="machi-ishi-place";
+const KEY="machi-ishi-zukan-v1";
 const MAX_OTHERS=12;
 function load(){try{const z=JSON.parse(localStorage.getItem(KEY)||"null");if(z&&z.found)return z}catch(e){}return{found:{},others:[],total:0}}
 let Z=load();
 (function migrate(){let moved=false;for(const k of Object.keys(Z.found)){const c=BY_ID[k];if(!c||!c.slot){const f=Z.found[k];
-  const r=c?{...f.r,name:c.name,reading:c.reading,rarity:c.rarity}:f.r;Z.others.push({r,thumb:f.thumb,date:f.date,place:f.place});delete Z.found[k];moved=true}
+  const r=c?{...f.r,name:c.name,reading:c.reading,rarity:c.rarity}:f.r;Z.others.push({r,thumb:f.thumb,date:f.date});delete Z.found[k];moved=true}
   else if(Z.found[k].r)Z.found[k].r.rarity=c.rarity}
   if(moved){Z.others.sort((a,b)=>b.date-a.date);if(Z.others.length>MAX_OTHERS)Z.others.length=MAX_OTHERS;try{localStorage.setItem(KEY,JSON.stringify(Z))}catch(e){}}})();
 function save(){
@@ -280,12 +266,9 @@ function save(){
   return "fail";
 }
 
-/* ---------- 場所チップ ---------- */
-let place="川原・水辺";
-try{const p=localStorage.getItem(PLACE_KEY);if(p)place=p}catch(e){}
-function renderChips(){document.querySelectorAll(".chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.p===place)))}
-$("#chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;place=b.dataset.p;renderChips();try{localStorage.setItem(PLACE_KEY,place)}catch(err){}});
-renderChips();
+/* ---------- しおりから開いたとき ---------- */
+const QS=new URLSearchParams(location.search);
+if(QS.get("from")==="shiori"){const l=$("#toShiori");l.hidden=false;l.addEventListener("click",e=>{e.preventDefault();if(history.length>1)history.back();else location.href=document.referrer||"../"})}
 
 /* ---------- 表示部品 ---------- */
 function starSvg(on){return `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="${on?"on":"off"}" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>`}
@@ -352,10 +335,10 @@ document.addEventListener("click",e=>{
   if(c.dataset.id){
     const s=BY_ID[c.dataset.id], f=Z.found[s.id];
     if(!f){openModal(`<div class="note" style="text-align:center"><p style="font-family:var(--display);font-size:22px;margin:4px 0">${"★".repeat(s.rarity)} ？？？</p><p style="margin:0"><strong>ヒント：</strong>${esc(s.hint||"")}</p><p class="tip" style="margin-top:8px">見つけて鑑定すると、ここに写真がはまるよ！</p></div>`);return}
-    openModal(certHtml({...f.r,name:s.name,reading:s.reading,rarity:s.rarity},f.thumb,{meta:`はじめて見つけた日：${fmtDate(f.date)}　見つけた数：${f.n}こ${f.place?`　場所：${esc(f.place)}`:""}`}));
+    openModal(certHtml({...f.r,name:s.name,reading:s.reading,rarity:s.rarity},f.thumb,{meta:`はじめて見つけた日：${fmtDate(f.date)}　見つけた数：${f.n}こ`}));
   }else if(c.dataset.other!==undefined){
     const o=Z.others[+c.dataset.other];
-    openModal(certHtml(o.r,o.thumb,{meta:`見つけた日：${fmtDate(o.date)}${o.place?`　場所：${esc(o.place)}`:""}`}));
+    openModal(certHtml(o.r,o.thumb,{meta:`見つけた日：${fmtDate(o.date)}`}));
   }
 });
 
@@ -455,7 +438,7 @@ async function appraise(file){
   ctl=new AbortController();
   try{
     const base64Data=big.toDataURL("image/jpeg",0.85).split(",")[1];
-    const r=await callApi(base64Data,buildPrompt(place),ctl.signal);
+    const r=await callApi(base64Data,buildPrompt(),ctl.signal);
     if(!r||r.isStone===false){
       $("#result").innerHTML=`<div class="note"><strong>石がよく見えなかったよ。</strong><br>${esc(r?.retryTip||"石を手にのせて、明るいところで近くからとってみてね。")}<div class="actions" style="margin-top:10px"><button class="btn" type="button" id="againBtn">もう一回とる</button></div></div>`;
       return;
@@ -468,10 +451,10 @@ async function appraise(file){
     const now=Date.now();let isNew=false;
     if(cat&&cat.slot){
       const f=Z.found[cat.id];
-      if(f){f.n++;f.r=rr}else{Z.found[cat.id]={n:1,date:now,thumb,r:rr,place};isNew=true}
+      if(f){f.n++;f.r=rr;f.last=now}else{Z.found[cat.id]={n:1,date:now,thumb,r:rr};isNew=true}
     }else{
       isNew=!Z.others.some(o=>o.r.name===rr.name);
-      Z.others.unshift({r:rr,thumb,date:now,place});if(Z.others.length>MAX_OTHERS)Z.others.length=MAX_OTHERS;
+      Z.others.unshift({r:rr,thumb,date:now});if(Z.others.length>MAX_OTHERS)Z.others.length=MAX_OTHERS;
     }
     Z.total=(Z.total||0)+1;
     const st=save();
